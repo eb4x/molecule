@@ -20,12 +20,16 @@
 """Converge Command Module."""
 
 import logging
+import os
 
 import click
 
+from molecule.api import drivers
 from molecule.command import base
+from molecule.config import DEFAULT_DRIVER
 
 LOG = logging.getLogger(__name__)
+MOLECULE_PLATFORM_NAME = os.environ.get("MOLECULE_PLATFORM_NAME", None)
 
 
 class Converge(base.Base):
@@ -49,11 +53,33 @@ class Converge(base.Base):
     default=base.MOLECULE_DEFAULT_SCENARIO_NAME,
     help=f"Name of the scenario to target. ({base.MOLECULE_DEFAULT_SCENARIO_NAME})",
 )
+@click.option(
+    "--platform-name",
+    "-p",
+    default=MOLECULE_PLATFORM_NAME,
+    help="Name of the platform to target only. Default is None",
+)
+@click.option(
+    "--driver-name",
+    "-d",
+    type=click.Choice([str(s) for s in drivers()]),
+    help=f"Name of driver to use. ({DEFAULT_DRIVER})",
+)
 @click.argument("ansible_args", nargs=-1, type=click.UNPROCESSED)
-def converge(ctx, scenario_name, ansible_args):  # pragma: no cover
+def converge(
+    ctx,
+    scenario_name,
+    driver_name,
+    ansible_args,
+    platform_name,
+):  # pragma: no cover
     """Use the provisioner to configure instances (dependency, create, prepare converge)."""
     args = ctx.obj.get("args")
     subcommand = base._get_subcommand(__name__)
-    command_args = {"subcommand": subcommand}
+    command_args = {
+        "subcommand": subcommand,
+        "driver_name": driver_name,
+        "platform_name": platform_name,
+    }
 
     base.execute_cmdline_scenarios(scenario_name, args, command_args, ansible_args)
